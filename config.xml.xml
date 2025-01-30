@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hora do Remédio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('https://i.imgur.com/8m7sXLS.jpg') no-repeat center center;
+            background-size: cover;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
+            overflow: hidden;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            font-size: 24px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .input-group label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: white;
+            padding: 0 5px;
+            font-size: 12px;
+            color: #555;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .alarm-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        .alarm-item input[type="checkbox"] {
+            margin-left: 10px;
+        }
+        .icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4CAF50;
+            font-size: 20px;
+        }
+        .add-medicine-btn {
+            background-color: #2196F3;
+            margin-top: 15px;
+        }
+        .medicine-entry {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        @media (max-width: 600px) {
+            body {
+                background-size: auto 100%;
+                background-position: center;
+            }
+            h1 {
+                font-size: 20px;
+            }
+            .input-group input {
+                font-size: 14px;
+            }
+            button {
+                font-size: 14px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-clock"></i> Hora do Remédio</h1>
+    <div id="medicineEntries">
+        <div class="medicine-entry">
+            <div class="input-group">
+                <label for="medicineName0">Nome do medicamento</label>
+                <input type="text" class="medicine-name" placeholder="Ex.: Paracetamol">
+                <i class="fas fa-capsules icon"></i>
+            </div>
+            <div class="input-group">
+                <label for="firstDose0">Horário da primeira dose</label>
+                <input type="time" class="first-dose">
+                <i class="fas fa-clock icon"></i>
+            </div>
+            <div class="input-group">
+                <label for="intervalHours0">Intervalo entre doses (em horas)</label>
+                <input type="number" class="interval-hours" placeholder="Ex.: 8" min="1">
+                <i class="fas fa-stopwatch icon"></i>
+            </div>
+        </div>
+    </div>
+    <button class="add-medicine-btn" id="addMedicineBtn"><i class="fas fa-plus"></i> Adicionar outro remédio</button>
+    <button id="calculateButton"><i class="fas fa-calculator"></i> Calcular</button>
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const medicineEntries = document.getElementById('medicineEntries');
+    const addMedicineBtn = document.getElementById('addMedicineBtn');
+    const calculateButton = document.getElementById('calculateButton');
+    const resultDiv = document.getElementById('result');
+
+    let medicineCount = 1;
+
+    addMedicineBtn.addEventListener('click', () => {
+        const entry = document.createElement('div');
+        entry.className = 'medicine-entry';
+        entry.innerHTML = `
+            <div class="input-group">
+                <label for="medicineName${medicineCount}">Nome do medicamento</label>
+                <input type="text" class="medicine-name" placeholder="Ex.: Paracetamol">
+                <i class="fas fa-capsules icon"></i>
+            </div>
+            <div class="input-group">
+                <label for="firstDose${medicineCount}">Horário da primeira dose</label>
+                <input type="time" class="first-dose">
+                <i class="fas fa-clock icon"></i>
+            </div>
+            <div class="input-group">
+                <label for="intervalHours${medicineCount}">Intervalo entre doses (em horas)</label>
+                <input type="number" class="interval-hours" placeholder="Ex.: 8" min="1">
+                <i class="fas fa-stopwatch icon"></i>
+            </div>
+        `;
+        medicineEntries.appendChild(entry);
+        medicineCount++;
+    });
+
+    calculateButton.addEventListener('click', () => {
+        const entries = Array.from(document.querySelectorAll('.medicine-entry'));
+        resultDiv.innerHTML = '';
+
+        entries.forEach(entry => {
+            const medicineName = entry.querySelector('.medicine-name').value.trim();
+            const firstDose = entry.querySelector('.first-dose').value;
+            const intervalHours = parseInt(entry.querySelector('.interval-hours').value);
+
+            if (!medicineName || !firstDose || isNaN(intervalHours) || intervalHours <= 0) {
+                alert('Por favor, preencha todos os campos corretamente.');
+                return;
+            }
+
+            const times = generateMedicineTimes(firstDose, intervalHours);
+            displayResults(medicineName, times);
+        });
+    });
+
+    function generateMedicineTimes(firstDose, intervalHours) {
+        const times = [];
+        let currentTime = new Date();
+        const [hours, minutes] = firstDose.split(':');
+        currentTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+        for (let i = 0; i < 24; i += intervalHours) {
+            const timeString = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            times.push(timeString);
+            currentTime.setHours(currentTime.getHours() + intervalHours);
+        }
+
+        return times;
+    }
+
+    function displayResults(medicineName, times) {
+        times.forEach(time => {
+            const div = document.createElement('div');
+            div.className = 'alarm-item';
+            div.innerHTML = `
+                <span>${time}</span>
+                <span>${medicineName}</span>
+                <label>
+                    <input type="checkbox" onchange="setAlarm('${time}', '${medicineName}')">
+                    Ativar alarme
+                </label>
+            `;
+            resultDiv.appendChild(div);
+        });
+    }
+
+    window.setAlarm = (time, medicineName) => {
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    scheduleNotification(time, medicineName);
+                }
+            });
+        } else {
+            scheduleNotification(time, medicineName);
+        }
+    };
+
+    function scheduleNotification(time, medicineName) {
+        const [hours, minutes] = time.split(':');
+        const now = new Date();
+        const alarmTime = new Date(now);
+        alarmTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+        if (alarmTime <= now) {
+            alarmTime.setDate(alarmTime.getDate() + 1);
+        }
+
+        const delay = alarmTime - now;
+
+        setTimeout(() => {
+            new Notification('Está na hora de tomar ' + medicineName);
+        }, delay);
+    }
+});
+</script>
+</body>
+</html>
